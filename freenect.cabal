@@ -1,0 +1,29 @@
+Name:                freenect
+Version:             0.1
+Synopsis:            Interface to the Kinect device.
+Description:         Interface to the Kinect device.
+License:             BSD3
+License-file:        LICENSE
+Author:              Chris Done
+Maintainer:          chrisdone@gmail.com
+Copyright:           Chris Done
+Category:            Graphics
+Build-type:          Simple
+Cabal-version:       >=1.2
+
+-- Library
+--   Hs-source-dirs:    src
+--   Exposed-modules:   Freenect
+--   Build-depends:     base > 4 && < 5
+--   Includes:          libfreenect.h libfreenect_sync.h
+--   Extra-libraries:   libfreenect, libfreenect_sync
+
+Executable freenect-haskell-example
+  Hs-source-dirs:    src
+  Main-is:           Main.hs
+  Build-depends:     base > 4 && < 5
+  Includes:          libfreenect.h libfreenect_sync.h
+  Extra-libraries:   freenect, freenect_sync
+  C-sources:         cbits/freenect-helpers.c
+  Install-includes:  gd-extras.h
+  Include-dirs:      cbits
