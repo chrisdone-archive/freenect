@@ -1,5 +1,25 @@
 Haskell interface to the Kinect.
 
+I got my Kinect this weekend. While developing this I made a little
+short-list of steps I took along the way to get libfreenect working
+and examples and such:
+
+    git clone https://github.com/OpenKinect/libfreenect.git
+    sudo apt-get install libusb-1.0-0-dev
+    sudo apt-get install freeglut3-dev
+    sudo apt-get install libxmu-dev
+    sudo apt-get install libxi-dev
+    mkdir build
+    cd build
+    cmake ..
+    make
+    sudo add-apt-repository ppa:arne-alamut/freenect
+    sudo adduser chris video
+
+    sudo cp -R build/lib/* /usr/lib
+    sudo apt-get install libcv-dev
+    sudo apt-get install libhighgui-dev
+
 Example program outputs:
 
 
