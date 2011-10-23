@@ -1,4 +1,4 @@
-Haskell interface to the Kinect.
+# Haskell interface to the Kinect
 
 I got my Kinect this weekend. While developing this I made a little
 short-list of steps I took along the way to get libfreenect working
@@ -19,8 +19,17 @@ and examples and such:
     sudo cp -R build/lib/* /usr/lib
     sudo apt-get install libcv-dev
     sudo apt-get install libhighgui-dev
+    
+# TODO
 
-Example program outputs:
+* Couple parts in the Haskell FFI do some mallocation, must add the necessary free()-equivalent calls.
+* Video support.
+
+Other than that, it's done!
+
+# EXAMPLE
+
+Example program outputs (point of interest: Payload):
 
 
     $ freenect-haskell-example
