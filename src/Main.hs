@@ -6,6 +6,9 @@ module Main
 
 import Freenect
 import Text.Printf
+import Control.Monad
+import Control.Monad.Fix
+import Data.IORef
 
 -- | Demos some Freenect use.
 main :: IO ()
@@ -18,13 +21,22 @@ main =
     printf "Selected devices: %s\n" (show devices)
     withDevice context index $ \device -> do
       printf "Opened device %d.\n" index
-      setDepthCallback device $ \_ _ timestamp ->
-        printf "Callback: %d\n" timestamp
+      done <- newIORef False
+      setDepthCallback device $ \payload timestamp -> do
+        printf "Payload: %s\n" (take 100 $ show payload)
+        writeIORef done True
       printf "Setted depth callback.\n"
+      setDepthMode device Medium ElevenBit
       startDepth device
       printf "Started depth stream.\n"
-      processEvents context
+      printf "Processing…\n"
+      fix $ \repeat -> do
+        processEvents context
+        isDone <- readIORef done
+        if isDone
+           then return ()
+           else repeat
       printf "Finished processing events.\n"
 
-  where devices = [Motor,Camera]
+  where devices = [Camera]
         index = 0 :: Integer

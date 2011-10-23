@@ -20,22 +20,26 @@ module Freenect
        ,setDepthCallback
        ,startDepth
        ,setTiltDegrees
+       ,setDepthMode
        ,Context
        ,FreenectException(..)
        ,Subdevice(..)
-       ,LogLevel(..))
+       ,LogLevel(..)
+       ,Resolution(..)
+       ,DepthFormat(..))
        where
 
 import Freenect.FFI
 
+import Control.Exception
 import Control.Monad
 import Data.Bits
+import Data.IORef
 import Data.List
-import Control.Exception
 import Data.Typeable
 import Foreign
 import Foreign.C
-import Data.IORef
+import Data.Vector.Storable (Vector,unsafeFromForeignPtr)
 
 -- | An acquireable resource. This abstracts the notion of C-level
 --   pointers that may or may not refer to something in memory. Avoids
@@ -67,6 +71,7 @@ data FreenectException
   | OpenDeviceFailed Integer -- ^ Opening a device failed.
   | StartDepthProblem        -- ^ Problem starting the depth stream.
   | UnableToSetTilt          -- ^ Unable to set the tilt.
+  | SetDepthMode             -- ^ Unable to set the depth mode.
     deriving (Show,Typeable)
 instance Exception FreenectException
 
@@ -199,10 +204,13 @@ setLogLevel level = withC $ \ptr -> do
   freenect_set_log_level ptr (fromIntegral (fromEnum level))
 
 -- | Set callback for depth information received event.
-setDepthCallback :: Device -> (Ptr DeviceStruct -> Ptr () -> Word32 -> IO ()) -> IO ()
+setDepthCallback :: Device -> (Vector Word16 -> Word32 -> IO ()) -> IO ()
 setDepthCallback d callback = flip withD d $ \dptr -> do
   dptr <- peek dptr
-  callbackPtr <- wrapDepthCallback callback
+  callbackPtr <- wrapDepthCallback $ \_ payloadptr timestamp -> do
+    fptr <- newForeignPtr_ payloadptr
+    let !vector = unsafeFromForeignPtr fptr 0 (640*480)
+    callback vector timestamp
   freenect_set_depth_callback dptr callbackPtr
 
 -- | Start the depth information stream for a device.
@@ -216,3 +224,23 @@ setTiltDegrees :: Double -> Device -> IO ()
 setTiltDegrees angle = withD $ \ptr -> succeed UnableToSetTilt (return ()) $ do
   ptr <- peek ptr
   freenect_set_tilt_degs ptr (realToFrac angle)
+
+data Resolution = Low | Medium | High
+  deriving (Enum,Show,Eq,Ord)
+
+data DepthFormat
+  = ElevenBit
+  | TenBit
+  | ElevenBitPacked
+  | TenBitPacked
+  deriving (Enum,Show,Eq)
+
+-- | Sets the current depth mode for the specified device.  The mode
+--    cannot be changed while streaming is active.
+setDepthMode :: Device -> Resolution -> DepthFormat -> IO ()
+setDepthMode d res fmt = flip withD d $ \dptr -> do
+  dptr <- peek dptr
+  frameMode <- find_depth_mode_freenect (fromIntegral (fromEnum res))
+                                        (fromIntegral (fromEnum fmt))
+  succeed SetDepthMode (return ()) $
+    set_freenect_depth_mode dptr frameMode
