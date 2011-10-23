@@ -6,27 +6,26 @@
 /*
  * Make a new freenect_context.
  */
-freenect_context* new_freenect_context(){
-  return malloc(sizeof (freenect_context*));
+freenect_context** new_freenect_context(){
+  freenect_context** ptr = malloc(sizeof (*ptr));
+  *ptr = malloc(sizeof (freenect_context*));
+  return ptr;
 };
 
 /*
  * Make a new freenect_device.
  */
-freenect_device* new_freenect_device(){
+freenect_device** new_freenect_device(){
   return malloc(sizeof (freenect_device*));
 };
 
-/*
- * Initialize a context.
- */
-int init_freenect_context(freenect_context *ctx){
-  return freenect_init(&ctx,NULL);
-};
-
-/*
- * Open a device.
- */
-int open_freenect_device(freenect_context *ctx,freenect_device *dev,int i){
-  return freenect_open_device(ctx,&dev,i);
-};
+/* int main() */
+/* { */
+/*   freenect_context** ctx = new_freenect_context(); */
+/*   freenect_init(ctx,NULL); */
+/*   freenect_device** dev = new_freenect_device(); */
+/*   freenect_open_device(*ctx,dev,0); */
+/*   freenect_close_device(*dev); */
+/*   freenect_shutdown(*ctx); */
+/*   printf("OK.\n"); */
+/* } */

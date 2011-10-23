@@ -14,7 +14,11 @@ module Freenect
        ,selectSubdevices
        ,newDevice
        ,openDevice
+       ,closeDevice
+       ,withDevice
        ,setLogLevel
+       ,setDepthCallback
+       ,startDepth
        ,Context
        ,FreenectException(..)
        ,Subdevice(..)
@@ -23,6 +27,7 @@ module Freenect
 
 import Freenect.FFI
 
+import Control.Monad
 import Data.Bits
 import Data.List
 import Control.Exception
@@ -36,16 +41,19 @@ import Data.IORef
 --   segmentation faults and other nasties. Nobody wants segmentation
 --   faults in their Haskell code.
 data Resource a = Initialized a | Uninitialized a
+  deriving Show
 
 -- | A Freenect context.
-newtype Context = CPtr (IORef (Resource (Ptr ContextStruct)))
+newtype Context = CPtr (IORef (Resource (Ptr (Ptr ContextStruct))))
 
 -- | A Freenect device.
-newtype Device = DPtr (IORef (Resource (Ptr DeviceStruct)))
+newtype Device = DPtr (IORef (Resource (Ptr (Ptr DeviceStruct))))
 
 -- | Freenect exception type.
 data FreenectException
   = InitFail           -- ^ There was a problem initializing.
+  | ShutdownFail       -- ^ There was a problem shutting down.
+  | CloseDeviceFail       -- ^ There was a problem closing the device.
   | AlreadyInitializedContext -- ^ Trying to initialize a context that
                               -- was already initialized.
   | AlreadyOpenedDevice -- ^ Trying to open a device that was
@@ -56,6 +64,7 @@ data FreenectException
                               --   device.
   | ProcessEvents      -- ^ Call to process events failed.
   | OpenDeviceFailed Integer -- ^ Opening a device failed.
+  | StartDepthProblem        -- ^ Problem starting the depth stream.
     deriving (Show,Typeable)
 instance Exception FreenectException
 
@@ -68,7 +77,7 @@ initialize (CPtr ptrRef) = do
     Initialized{} -> throw AlreadyInitializedContext
     Uninitialized ptr -> do
       succeed InitFail (writeIORef ptrRef (Initialized ptr)) $
-        init_freenect_context ptr
+        freenect_init ptr 0
 
 -- | Create a new Freenect context. Must be initialized before use.
 newContext :: IO Context
@@ -76,13 +85,16 @@ newContext = new_freenect_context >>= fmap CPtr . newIORef . Uninitialized
 
 -- | Shutdown a Freenect context.
 shutdown :: Context -> IO ()
-shutdown = withC (succeed InitFail (return ()) . freenect_shutdown)
+shutdown cptr@(CPtr ptrRef) = flip withC cptr $ \ptr ->
+  succeed ShutdownFail
+          (writeIORef ptrRef (Uninitialized ptr))
+          (peek ptr >>= freenect_shutdown)
   
 -- | Count the number of devices on a Freenect context.
 countDevices :: Context -> IO Integer
 countDevices =
   withC $ \ptr ->
-    fmap fromIntegral (freenect_num_devices ptr)
+    fmap fromIntegral (peek ptr >>= freenect_num_devices)
 
 -- | Do something with an initialized context, and free the context at
 --   the end of the comutation, or on exception.
@@ -91,7 +103,8 @@ withContext f = bracket newContext shutdown (\c -> do initialize c; f c)
 
 -- | Process events.
 processEvents :: Context -> IO ()
-processEvents = withC (succeed ProcessEvents (return ()) . freenect_process_events)
+processEvents = withC (succeed ProcessEvents (return ())
+              . (peek >=> freenect_process_events))
 
 -- | Run a computation for which the CInt result is zero (in C this is
 --   success), and thrown an exception if the result is non-zero.
@@ -114,7 +127,8 @@ data Subdevice = Motor | Camera | Auto
 --   cameras, and audio, if supported on the platform.
 selectSubdevices :: Context -> [Subdevice] -> IO ()
 selectSubdevices c (nub -> subdevices) = flip withC c $ \ptr -> do
-  freenect_select_subdevices ptr (foldl1 (.|.) (map toDeviceId subdevices))
+  ptr <- peek ptr
+  freenect_select_subdevices  ptr (foldl1 (.|.) (map toDeviceId subdevices))
 
   where toDeviceId Motor = 1
         toDeviceId Camera = 2
@@ -131,15 +145,25 @@ openDevice c (DPtr devptr) index = flip withC c $ \cptr -> do
   case dptr of
     Initialized{} -> throw AlreadyOpenedDevice
     Uninitialized dptr -> do
-      succeed (OpenDeviceFailed index) (return ()) $
-        open_freenect_device cptr dptr (fromIntegral index)
+      succeed (OpenDeviceFailed index) (writeIORef devptr (Initialized dptr)) $ do
+        cptr <- peek cptr
+        freenect_open_device cptr dptr (fromIntegral index)
 
--- | With a context and a device, do something.
-withCD :: Context -> Device -> (Ptr ContextStruct -> Ptr DeviceStruct -> IO a) -> IO a
-withCD c d cons = (withC (\cptr -> withD (\dptr -> cons cptr dptr) d) c)
+-- | Close a device.
+closeDevice :: Device -> IO ()
+closeDevice dptr@(DPtr ptrRef) = do
+  flip withD dptr $ \ptr -> do
+    succeed CloseDeviceFail
+            (writeIORef ptrRef (Uninitialized ptr))
+            (peek ptr >>= freenect_close_device)
+
+-- | Do something with an initialized context, and free the context at
+--   the end of the comutation, or on exception.
+withDevice :: Context -> Integer -> (Device -> IO a) -> IO a
+withDevice ctx i f = bracket newDevice closeDevice (\d -> do openDevice ctx d i; f d)
 
 -- | Do something with a device pointer. Unexported.
-withD :: (Ptr DeviceStruct -> IO a) -> Device -> IO a
+withD :: (Ptr (Ptr DeviceStruct) -> IO a) -> Device -> IO a
 withD cons (DPtr ptr) = do
   ptr <- readIORef ptr
   case ptr of
@@ -147,7 +171,7 @@ withD cons (DPtr ptr) = do
     Initialized ptr -> cons ptr
 
 -- | Do something with a context pointer. Unexported.
-withC :: (Ptr ContextStruct -> IO a) -> Context -> IO a
+withC :: (Ptr (Ptr ContextStruct) -> IO a) -> Context -> IO a
 withC cons (CPtr ptr) = do
   ptr <- readIORef ptr
   case ptr of
@@ -156,17 +180,31 @@ withC cons (CPtr ptr) = do
 
 -- | Message logging levels.
 data LogLevel
-  = LogFatal    -- ^ Log for crashing/non-recoverable errors
-  | LogError    -- ^ Log for major errors
-  | LogWarning  -- ^ Log for warning messages
-  | LogNotice   -- ^ Log for important messages
-  | LogInfo     -- ^ Log for normal messages
-  | LogDebug    -- ^ Log for useful development messages
-  | LogSpew     -- ^ Log for slightly less useful messages
-  | LogFlood    -- ^ Log EVERYTHING. May slow performance.
+  = LogFatal    -- ^ Crashing/non-recoverable errors
+  | LogError    -- ^ Major errors
+  | LogWarning  -- ^ Warning messages
+  | LogNotice   -- ^ Important messages
+  | LogInfo     -- ^ Normal messages
+  | LogDebug    -- ^ Useful development messages
+  | LogSpew     -- ^ Slightly less useful messages
+  | LogFlood    -- ^ EVERYTHING. May slow performance.
   deriving (Show,Eq,Enum)
 
 -- | Set the logging level for the specified context.
 setLogLevel :: LogLevel -> Context -> IO ()
 setLogLevel level = withC $ \ptr -> do
+  ptr <- peek ptr
   freenect_set_log_level ptr (fromIntegral (fromEnum level))
+
+-- | Set callback for depth information received event.
+setDepthCallback :: Device -> (Ptr DeviceStruct -> Ptr () -> Word32 -> IO ()) -> IO ()
+setDepthCallback d callback = flip withD d $ \dptr -> do
+  dptr <- peek dptr
+  callbackPtr <- wrapDepthCallback callback
+  freenect_set_depth_callback dptr callbackPtr
+
+-- | Start the depth information stream for a device.
+startDepth :: Device -> IO ()
+startDepth = withD $ \ptr -> succeed StartDepthProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_start_depth ptr
