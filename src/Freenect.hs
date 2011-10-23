@@ -19,6 +19,7 @@ module Freenect
        ,setLogLevel
        ,setDepthCallback
        ,startDepth
+       ,setTiltDegrees
        ,Context
        ,FreenectException(..)
        ,Subdevice(..)
@@ -65,6 +66,7 @@ data FreenectException
   | ProcessEvents      -- ^ Call to process events failed.
   | OpenDeviceFailed Integer -- ^ Opening a device failed.
   | StartDepthProblem        -- ^ Problem starting the depth stream.
+  | UnableToSetTilt          -- ^ Unable to set the tilt.
     deriving (Show,Typeable)
 instance Exception FreenectException
 
@@ -208,3 +210,9 @@ startDepth :: Device -> IO ()
 startDepth = withD $ \ptr -> succeed StartDepthProblem (return ()) $ do
   ptr <- peek ptr
   freenect_start_depth ptr
+
+-- | Start the depth information stream for a device.
+setTiltDegrees :: Double -> Device -> IO ()
+setTiltDegrees angle = withD $ \ptr -> succeed UnableToSetTilt (return ()) $ do
+  ptr <- peek ptr
+  freenect_set_tilt_degs ptr (realToFrac angle)

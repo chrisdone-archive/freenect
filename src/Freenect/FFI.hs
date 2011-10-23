@@ -64,6 +64,10 @@ foreign import ccall
   freenect_start_depth :: Ptr DeviceStruct
                        -> IO CInt
 
+foreign import ccall
+  "freenect.h freenect_set_tilt_degs"
+  freenect_set_tilt_degs :: Ptr DeviceStruct -> CDouble -> IO CInt
+
 --------------------------------------------------------------------------------
 -- Helpers.
 
