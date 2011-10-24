@@ -22,11 +22,11 @@ main =
     withDevice context index $ \device -> do
       printf "Opened device %d.\n" index
       done <- newIORef False
+      setDepthMode device Medium ElevenBit
       setDepthCallback device $ \payload timestamp -> do
         printf "Payload: %s\n" (take 100 $ show payload)
         writeIORef done True
       printf "Setted depth callback.\n"
-      setDepthMode device Medium ElevenBit
       startDepth device
       printf "Started depth stream.\n"
       printf "Processing…\n"

@@ -90,3 +90,7 @@ foreign import ccall
 foreign import ccall
   "freenect.h set_freenect_depth_mode"
   set_freenect_depth_mode :: Ptr DeviceStruct -> Ptr FrameMode -> IO CInt
+
+foreign import ccall
+  "freenect.h get_freenect_depth_resolution"
+  get_freenect_depth_resolution :: Ptr DeviceStruct -> IO CInt

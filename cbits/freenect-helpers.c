@@ -36,3 +36,11 @@ int set_freenect_depth_mode(freenect_device* dev,freenect_frame_mode* mode)
 {
   return freenect_set_depth_mode(dev,*mode);
 };
+
+/*
+ * Get the depth resolution of a device.
+ */
+uint32_t get_freenect_depth_resolution(freenect_device* dev){
+  freenect_frame_mode mode = freenect_get_current_depth_mode(dev);
+  return mode.resolution;
+}

@@ -31,7 +31,7 @@ module Freenect
 
 import Freenect.FFI
 
-import Control.Exception
+import Control.Exception (bracket,throw,Exception(..))
 import Control.Monad
 import Data.Bits
 import Data.IORef
@@ -72,6 +72,7 @@ data FreenectException
   | StartDepthProblem        -- ^ Problem starting the depth stream.
   | UnableToSetTilt          -- ^ Unable to set the tilt.
   | SetDepthMode             -- ^ Unable to set the depth mode.
+  | DepthModeNotSet          -- ^ You didn't set the depth mode.
     deriving (Show,Typeable)
 instance Exception FreenectException
 
@@ -207,11 +208,19 @@ setLogLevel level = withC $ \ptr -> do
 setDepthCallback :: Device -> (Vector Word16 -> Word32 -> IO ()) -> IO ()
 setDepthCallback d callback = flip withD d $ \dptr -> do
   dptr <- peek dptr
+  resolution <- get_freenect_depth_resolution dptr
+  let !size = resolutionToSize (toEnum (fromIntegral resolution))
   callbackPtr <- wrapDepthCallback $ \_ payloadptr timestamp -> do
     fptr <- newForeignPtr_ payloadptr
-    let !vector = unsafeFromForeignPtr fptr 0 (640*480)
+    let !vector = unsafeFromForeignPtr fptr 0 size
     callback vector timestamp
   freenect_set_depth_callback dptr callbackPtr
+
+-- | Resolution to size.
+resolutionToSize :: Resolution -> Int
+resolutionToSize Low    = 320  * 240
+resolutionToSize Medium = 640  * 480
+resolutionToSize High   = 1280 * 1024
 
 -- | Start the depth information stream for a device.
 startDepth :: Device -> IO ()
