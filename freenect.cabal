@@ -3,6 +3,7 @@ Version:             1.0
 Synopsis:            Interface to the Kinect device.
 Description:         Interface to the Kinect device. Currently supports
                      depth perception. (No video or audio.)
+Homepage:            https://github.com/chrisdone/freenect
 License:             BSD3
 License-file:        LICENSE
 Author:              Chris Done
@@ -12,6 +13,10 @@ Category:            Graphics
 Build-type:          Simple
 Cabal-version:       >=1.2
 Stability:           Experimental
+
+source-repository head
+  type:     git
+  location: http://github.com/chrisdone/freenect
 
 Library
   Hs-source-dirs:    src
