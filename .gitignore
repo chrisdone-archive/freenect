@@ -3,3 +3,5 @@
 src/TAGS
 dist/
 cabal-dev/
+*_stub.c
+*_stub.h
