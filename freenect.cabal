@@ -26,7 +26,6 @@ Library
   Includes:          libfreenect.h libfreenect_sync.h
   Extra-libraries:   freenect, freenect_sync
   C-sources:         cbits/freenect-helpers.c
-  Install-includes:  gd-extras.h
   Include-dirs:      cbits
 
 Executable freenect-haskell-example
@@ -38,5 +37,4 @@ Executable freenect-haskell-example
   Includes:          libfreenect.h libfreenect_sync.h
   Extra-libraries:   freenect, freenect_sync
   C-sources:         cbits/freenect-helpers.c
-  Install-includes:  gd-extras.h
   Include-dirs:      cbits
