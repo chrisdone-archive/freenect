@@ -323,7 +323,7 @@ setDepthMode d res fmt = flip withD d $ \dptr -> do
 --
 -- @
 -- setDepthCallback device $ \payload timestamp -> do
---   printf "Payload: %s\n" (take 100 $ show payload)
+--   printf \"Payload: %s\n\" (take 100 $ show payload)
 -- @
 -- 
 -- Important: Based on the depth mode set earlier, `setDepthCallback'
