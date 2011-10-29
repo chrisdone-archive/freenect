@@ -14,7 +14,7 @@ import Data.IORef
 main :: IO ()
 main =
   withContext $ \context -> do
-    setLogLevel LogFlood context
+    setLogLevel LogDebug context
     deviceCount <- countDevices context
     printf "Devices: %d\n" deviceCount
     selectSubdevices context devices

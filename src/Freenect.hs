@@ -32,7 +32,6 @@ module Freenect
 import Freenect.FFI
 
 import Control.Exception (bracket,throw,Exception(..))
-import Control.Monad
 import Data.Bits
 import Data.IORef
 import Data.List
@@ -67,7 +66,7 @@ data FreenectException
                               --   context.
   | UseOfUninitializedDevice  -- ^ Attempt to use an uninitialized
                               --   device.
-  | ProcessEvents      -- ^ Call to process events failed.
+  | ProcessEvents CInt       -- ^ Call to process events failed.
   | OpenDeviceFailed Integer -- ^ Opening a device failed.
   | StartDepthProblem        -- ^ Problem starting the depth stream.
   | UnableToSetTilt          -- ^ Unable to set the tilt.
@@ -111,8 +110,18 @@ withContext f = bracket newContext shutdown (\c -> do initialize c; f c)
 
 -- | Process events.
 processEvents :: Context -> IO ()
-processEvents = withC (succeed ProcessEvents (return ())
-              . (peek >=> freenect_process_events))
+processEvents = withC $ \cptr -> do
+  cptr <- peek cptr
+  result <- freenect_process_events cptr
+  case result of
+    -- LIBUSB_ERROR_INTERRUPTED 	
+    -- System call interrupted (perhaps due to signal).
+    -- I think the GHC runtime sends interrupts sometimes, or
+    -- otherwise signals are coming from somewhere but are they appear
+    -- to be ignorable.
+    -10 -> return ()
+    _ | result < 0 -> throw (ProcessEvents result)
+      | otherwise  -> return ()
 
 -- | Run a computation for which the CInt result is zero (in C this is
 --   success), and thrown an exception if the result is non-zero.
