@@ -3,9 +3,22 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 
 -- | Interface to the Kinect device.
+--
+-- See the package archive for example programs.
+--
 
 module Freenect
-       (initialize
+       (
+       -- * Initializing the context
+       -- $contexts
+       
+       -- * Working with devices
+       -- $devices
+       
+       -- * Events; recieving data
+       -- $events
+
+        initialize
        ,newContext
        ,shutdown
        ,countDevices
@@ -262,3 +275,76 @@ setDepthMode d res fmt = flip withD d $ \dptr -> do
                                         (fromIntegral (fromEnum fmt))
   succeed SetDepthMode (return ()) $
     set_freenect_depth_mode dptr frameMode
+
+-- $contexts
+-- 
+-- First you need to initalize a context. Example:
+--
+-- @
+-- do context <- newContext
+--    initalize context
+--    ...
+--    shutdown context
+-- @
+--
+-- Rather than messing around with this, it's better if you just use
+-- withContext, which does this for you:
+--
+-- @
+-- withContext $ \context -> do
+--   ...
+-- @
+-- 
+-- All stuff with this library works within a context.
+
+-- $devices
+--
+-- You need to select which sub devices you want to use from the Kinect
+-- (e.g. camera, motor, audio):
+--
+-- @selectSubdevices context [Camera,Motor]@
+-- 
+-- Then you open a device context through which you can control the sub devices.
+-- 
+-- @
+-- withDevice context 0 $ \device -> do
+--   ...
+-- @
+--
+-- The second argument is which Kinect to use. You can get a count of these using
+--
+-- @deviceCount <- countDevices context@
+--
+-- Then you should set the depth mode you want:
+--
+-- @setDepthMode device Medium ElevenBit@
+--
+-- This should come before the next part, which is setting the callback:
+--
+-- @
+-- setDepthCallback device $ \payload timestamp -> do
+--   printf "Payload: %s\n" (take 100 $ show payload)
+-- @
+-- 
+-- Important: Based on the depth mode set earlier, `setDepthCallback'
+-- knows how to copy the payload into a vector for the callback. This
+-- is why it should come first. Arguably in future APIs a device
+-- should not be initializable without a depth mode.
+--
+-- Once that's done, you start the depth stream:
+--
+-- @startDepth device@
+
+-- $events
+--
+-- Finally you need a way to receieve data. You call `processEvents'
+-- like this, for example:
+--
+-- @
+-- forever $ do
+--   processEvents context
+-- @
+--
+-- Calls `processEvents' trigger the depth callback. Continue calling
+-- it sequentially as much as you want, but not from the depth
+-- callback itself.
