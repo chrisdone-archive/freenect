@@ -11,7 +11,7 @@ Maintainer:          chrisdone@gmail.com
 Copyright:           Chris Done
 Category:            Graphics
 Build-type:          Simple
-Cabal-version:       >=1.2
+Cabal-version:       >=1.6
 Stability:           Experimental
 
 source-repository head
