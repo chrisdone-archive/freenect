@@ -35,6 +35,7 @@ module Freenect
        ,setTiltDegrees
        ,setDepthMode
        ,Context
+       ,Device
        ,FreenectException(..)
        ,Subdevice(..)
        ,LogLevel(..)

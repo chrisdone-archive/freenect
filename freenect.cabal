@@ -1,5 +1,5 @@
 Name:                freenect
-Version:             1.0.1
+Version:             1.0.2
 Synopsis:            Interface to the Kinect device.
 Description:         Interface to the Kinect device. Currently supports
                      depth perception. (No video or audio.)
