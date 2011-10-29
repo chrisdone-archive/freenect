@@ -9,6 +9,7 @@ module Main
 
 import           Control.Concurrent
 import           Control.Monad
+import           Data.Bits
 import           Data.IORef
 import           Data.Vector.Storable      (Vector,(!))
 import qualified Data.Vector.Storable      as V
@@ -16,7 +17,7 @@ import           Data.Word
 import           Foreign.ForeignPtr
 import           Freenect
 import           Graphics.Rendering.OpenGL
-import           Graphics.UI.GLUT
+import           Graphics.UI.GLUT hiding (shift)
 
 width, height :: Int
 width = 640
@@ -63,7 +64,7 @@ display depthGrid = do
     Just grid -> do
       forM_ [(x,y) | x <- [0..width-1], y <- [0..height-1]] $ \(x,y) -> do
         let depth = grid ! (y*width + x)
-            d = (fromIntegral (depth `mod` 100))/100
+            d = fromIntegral (fromIntegral depth :: Word8)/255
         patch (x,height-y)
               (d,d,d)
       swapBuffers
