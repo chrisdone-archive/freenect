@@ -1,6 +1,7 @@
 *.o
 *.hi
 src/TAGS
+examples/src/TAGS
 dist/
 cabal-dev/
 *_stub.c
