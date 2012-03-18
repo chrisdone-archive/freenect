@@ -251,7 +251,7 @@ startDepth = withD $ \ptr -> succeed StartDepthProblem (return ()) $ do
   ptr <- peek ptr
   freenect_start_depth ptr
 
--- | Start the depth information stream for a device.
+-- | Set the tilt degrees for a device.
 setTiltDegrees :: Double -> Device -> IO ()
 setTiltDegrees angle = withD $ \ptr -> succeed UnableToSetTilt (return ()) $ do
   ptr <- peek ptr
