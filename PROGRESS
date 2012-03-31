@@ -1,0 +1,36 @@
+3/31/2012
+---------
+Followed Chris's README instructions to install the freenect drivers/libs for Ubuntu, everything installed successfully without any problems.
+
+Tested the installation by running the glview demo in the bin directory. Video and depth frames were successfully displayed.
+
+Forked Chris's github project for the Haskell Kinect interface (http://github.com/chrisdone/freenect) to my own github account (http://github.com/kevincon/freenect) and cloned it on my machine.
+
+Saw that Chris's example Haksell programs use the Freenect Haskell module he made, but they're in different folders so I think I should install the Freenect module to some standard lib place.
+
+Tried running "cabal install freenect.cabal" in the github repo, this looks like it's what I'm supposed to do but it's not finding libfreenect.h. Went back to the libfreenect source on my computer and ran "sudo make install." This copied all of the files to various locations, I noticed it copied the libs I copied previously manually to a different location, so maybe Chris discovered that Haskell looks for the libs in /usr/lib instead of /usr/local/lib.
+
+After that, "cabal install freenect.cabal" still didn't work, so I added "/usr/local/include/libfreenect
+" as an include-dir in the file freenect.cabal myself. This got it working, installing the freenect library in /home/kevin/.cabal/lib/freenect-1.1.1/ghc-7.0.4 and registering the module with ghc.
+
+Next I went to Chris's examples folder and tried running "runhaskell Depth.hs." I got an error about "libusb couldn't open USB device /dev/bus/usb/001/015: Permission denied." Reran the command with sudo and it looks like the example ran successfully, here's my output:
+Devices: 1
+Selected devices: [Camera]
+Opened device 0.
+Setted depth callback.
+Write Reg 0x0105 <= 0x00
+Write Reg 0x0006 <= 0x00
+Write Reg 0x0012 <= 0x03
+Write Reg 0x0013 <= 0x01
+Write Reg 0x0014 <= 0x1e
+Write Reg 0x0006 <= 0x02
+Write Reg 0x0017 <= 0x00
+Started depth stream.
+Processing…
+Payload: fromList [887,887,888,887,889,892,892,892,892,892,893,893,895,896,897,896,897,898,899,899,900,900,90
+Finished processing events.
+Write Reg 0x0006 <= 0x00
+
+
+
+
