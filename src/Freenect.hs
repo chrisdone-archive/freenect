@@ -30,9 +30,12 @@ module Freenect
        ,closeDevice
        ,withDevice
        ,setLogLevel
+       ,setVideoCallback
+       ,startVideo
        ,setDepthCallback
        ,startDepth
        ,setTiltDegrees
+       ,setVideoMode
        ,setDepthMode
        ,Context
        ,Device
@@ -40,6 +43,7 @@ module Freenect
        ,Subdevice(..)
        ,LogLevel(..)
        ,Resolution(..)
+       ,VideoFormat(..)
        ,DepthFormat(..))
        where
 
@@ -82,10 +86,13 @@ data FreenectException
                               --   device.
   | ProcessEvents CInt       -- ^ Call to process events failed.
   | OpenDeviceFailed Integer -- ^ Opening a device failed.
+  | StartVideoProblem        -- ^ Problem starting the video stream.
   | StartDepthProblem        -- ^ Problem starting the depth stream.
   | UnableToSetTilt          -- ^ Unable to set the tilt.
+  | SetVideoMode             -- ^ Unable to set the video mode.
+  | VideoModeNotSet          -- ^ TODO, not used: You didn't set the video mode.
   | SetDepthMode             -- ^ Unable to set the depth mode.
-  | DepthModeNotSet          -- ^ You didn't set the depth mode.
+  | DepthModeNotSet          -- ^ TODO, not used: You didn't set the depth mode.
     deriving (Show,Typeable)
 instance Exception FreenectException
 
@@ -227,6 +234,18 @@ setLogLevel level = withC $ \ptr -> do
   ptr <- peek ptr
   freenect_set_log_level ptr (fromIntegral (fromEnum level))
 
+-- | Set callback for video information received event.
+setVideoCallback :: Device -> (Vector Word8 -> Word32 -> IO ()) -> IO ()
+setVideoCallback d callback = flip withD d $ \dptr -> do
+  dptr <- peek dptr
+  resolution <- get_freenect_video_resolution dptr
+  let !size = resolutionToSize (toEnum (fromIntegral resolution))
+  callbackPtr <- wrapVideoCallback $ \_ payloadptr timestamp -> do
+    fptr <- newForeignPtr_ payloadptr
+    let !vector = unsafeFromForeignPtr fptr 0 (size * 3)
+    callback vector timestamp
+  freenect_set_video_callback dptr callbackPtr
+
 -- | Set callback for depth information received event.
 setDepthCallback :: Device -> (Vector Word16 -> Word32 -> IO ()) -> IO ()
 setDepthCallback d callback = flip withD d $ \dptr -> do
@@ -245,6 +264,12 @@ resolutionToSize Low    = 320  * 240
 resolutionToSize Medium = 640  * 480
 resolutionToSize High   = 1280 * 1024
 
+-- | Start the video information stream for a device.
+startVideo :: Device -> IO ()
+startVideo = withD $ \ptr -> succeed StartVideoProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_start_video ptr
+
 -- | Start the depth information stream for a device.
 startDepth :: Device -> IO ()
 startDepth = withD $ \ptr -> succeed StartDepthProblem (return ()) $ do
@@ -260,6 +285,24 @@ setTiltDegrees angle = withD $ \ptr -> succeed UnableToSetTilt (return ()) $ do
 data Resolution = Low | Medium | High
   deriving (Enum,Show,Eq,Ord)
 
+data VideoFormat
+  = RGB
+  | Bayer
+  | EightBitIR
+  | TenBitIR
+  | TenBitPackedIR
+  | YUVRGB
+  | YUVRaw
+  deriving (Enum,Show,Eq)
+  
+setVideoMode :: Device -> Resolution -> VideoFormat -> IO ()
+setVideoMode d res fmt = flip withD d $ \dptr -> do
+  dptr <- peek dptr
+  frameMode <- find_video_mode_freenect (fromIntegral (fromEnum res))
+                                        (fromIntegral (fromEnum fmt))
+  succeed SetVideoMode (return ()) $
+    set_freenect_video_mode dptr frameMode
+  
 data DepthFormat
   = ElevenBit
   | TenBit
@@ -335,7 +378,28 @@ setDepthMode d res fmt = flip withD d $ \dptr -> do
 -- Once that's done, you start the depth stream:
 --
 -- @startDepth device@
-
+--
+-- Likewise, you can grab video frames. Once you have a context, set the
+-- video mode you want using
+--
+-- @setVideoMode device Medium RGB@
+--
+-- In this example, we set medium resolution (640x480) with raw RGB24 Bytes.
+--
+-- Next, set the video callback:
+--
+-- @
+-- setVideoCallback device $ \payload timestamp -> do
+--   printf \"Payload: %s\n\" (take 100 $ show payload)
+-- @
+--
+-- Note that unlike depth, which comes in as vector of Word16's, video is a
+-- vector of Word8's.
+--
+-- Lastly, start the video stream:
+--
+-- @startVideo device@
+--
 -- $events
 --
 -- Finally you need a way to receieve data. You call `processEvents'
@@ -346,6 +410,6 @@ setDepthMode d res fmt = flip withD d $ \dptr -> do
 --   processEvents context
 -- @
 --
--- Calls `processEvents' trigger the depth callback. Continue calling
--- it sequentially as much as you want, but not from the depth
--- callback itself.
+-- Calls `processEvents' to trigger the depth and/or video callback. Continue calling
+-- it sequentially as much as you want, but not from within the depth or video
+-- callbacks.

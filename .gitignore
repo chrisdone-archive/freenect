@@ -2,7 +2,10 @@
 *.hi
 src/TAGS
 examples/src/TAGS
+TAGS
+examples/TAGS
 dist/
 cabal-dev/
 *_stub.c
 *_stub.h
+output.bmp
