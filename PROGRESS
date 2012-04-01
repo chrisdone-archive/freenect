@@ -31,6 +31,7 @@ Payload: fromList [887,887,888,887,889,892,892,892,892,892,893,893,895,896,897,8
 Finished processing events.
 Write Reg 0x0006 <= 0x00
 
+Next, I found a simple C program at http://openkinect.org/wiki/C_Sync_Wrapper that uses the libfreenect C_sync wrapper to synchronously grab an RGB frame from the Kinect and display it using opencv. This worked for me, displaying real-time video in an opencv window.
 
 
 
