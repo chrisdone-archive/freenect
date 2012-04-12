@@ -33,5 +33,6 @@ Write Reg 0x0006 <= 0x00
 
 Next, I found a simple C program at http://openkinect.org/wiki/C_Sync_Wrapper that uses the libfreenect C_sync wrapper to synchronously grab an RGB frame from the Kinect and display it using opencv. This worked for me, displaying real-time video in an opencv window.
 
-
-
+4/12/2012
+---------
+I've looked through most of Chris's code and I think I have a good understanding of how it works using FFI to call C functions from the libfreenect c_sync library. Next I plan to write some FFI interface code to try to grab an RGB frame from the Kinect in Haskell.
