@@ -36,3 +36,36 @@ Next, I found a simple C program at http://openkinect.org/wiki/C_Sync_Wrapper th
 4/12/2012
 ---------
 I've looked through most of Chris's code and I think I have a good understanding of how it works using FFI to call C functions from the libfreenect c_sync library. Next I plan to write some FFI interface code to try to grab an RGB frame from the Kinect in Haskell.
+
+4/22/2012
+---------
+Okay time to crank this out! The first thing I did was learn how to get rid of the "Permission denied" error when trying to use the libfreenect library. The super easy way to do this is to go to the source folder for libfreenect and go to platform/linux/udev. Inside that folder is a file called 51-kinect.rules that you need to copy to /etc/udev/rules.d. So run "sudo cp 51-kinect.rules /etc/udev/rules.d" and that will get rid of the permission denied error forever.
+
+Next I tried Chris's suggestion for compiling the examples, which automatically compiles the haskell freenect library. So I went into the examples folder and ran "cabal install examples.cabal". It gave me an error about the libfreenect lib location, so I edited the examples.cabal file the same way I previously edited the freenect.cabal file. Running cabal install again almost worked but it complained about not having glut. I thought cabal would work like apt-get and automatically get the dependencies it needs, but I just ran "cabal install glut" and then I was able to successfully compile the freenect examples. I found the Glut.hs example to run really slow for me, which I'm going to blame on this laptop's poor hardware for now. It looks much better in Chris's YouTube video: http://www.youtube.com/watch?v=as2syH8Y8yc
+
+After looking over the code one more time to make sure I understood how all the pieces connected, I started adding video support. This mostly consisted of copying Chris's existing depth-related functions and replacing "depth" with "video". libfreenect does a pretty great job of abstracting the differences between depth-related functions and video-related functions. I had to add additional helper functions in the cbits/freenect-helpers.c file following Chris's lead, and do foreign imports for those functions in the FFI.hs file.
+
+Once I added all the code I needed, I recompiled the freenect library and started editing the Depth.hs example to become RGB.hs. Instead of printing out a few depth pixel values, I wanted it to print out the RGB color values of the video. I compiled my RGB.hs file and tried it out. It appears to work, here's my output:
+Devices: 1
+Selected devices: [Camera]
+Opened device 0.
+Setted video callback.
+Write Reg 0x000c <= 0x00
+Write Reg 0x000d <= 0x01
+Write Reg 0x000e <= 0x1e
+Write Reg 0x0005 <= 0x01
+Write Reg 0x0047 <= 0x00
+Started video stream.
+Processing…
+Payload: fromList [22395,31559,16216,22144,34104,14422,21630,30521,17753,24443,32594,16732,22912,33329,18265,
+Finished processing events.
+Write Reg 0x0005 <= 0x00
+
+Next I wanted to try adapting Chris's Glut.hs example to display the RGB video in real-time. One thing I discovered I should do is change the pointer size of the video payload from Word16 to Word8. This would make it easier to access the RGB bytes, since in raw RGB mode they are stored as one Byte after another, Red first, Green second, Blue third. I also realized the values I got from the payload above consist of the RGB bytes concatenated.
+
+I got the GlutRGB.hs file to a point where I was ready to test it, and when I did, I got an image, but it was greyscale and something was wrong with it. It looked like multiple images overlayed on top of another. I played around with it for a while but wasn't getting anywhere, so I thought I'd try to do something simpler: saving a frame to a .BMP file.
+
+I edited RGB.hs to a point where it should save a BMP file, and wouldn't you know it, I still got the weird greyscale effect. I decided to try changing the video mode from RGB to Bayer, and success! I got a coherent image from the Kinect. But it was still in greyscale.
+
+
+
