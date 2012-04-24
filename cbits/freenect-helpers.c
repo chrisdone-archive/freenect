@@ -20,7 +20,33 @@ freenect_device** new_freenect_device(){
 };
 
 /*
- * Get a frame mode.
+ * Get a video frame mode.
+ */
+freenect_frame_mode* find_video_mode_freenect(uint32_t res,
+                                              uint32_t fmt){
+  freenect_frame_mode* mode = malloc(sizeof (*mode));
+  *mode = freenect_find_video_mode(res,fmt);
+  return mode;
+};
+
+/*
+ * Set the video mode of a device.
+ */
+int set_freenect_video_mode(freenect_device* dev,freenect_frame_mode* mode)
+{
+  return freenect_set_video_mode(dev,*mode);
+}; 
+
+/*
+ * Get the video resolution of a device.
+ */
+uint32_t get_freenect_video_resolution(freenect_device* dev){
+  freenect_frame_mode mode = freenect_get_current_video_mode(dev);
+  return mode.resolution;
+}
+
+/*
+ * Get a depth frame mode.
  */
 freenect_frame_mode* find_depth_mode_freenect(uint32_t res,
                                               uint32_t fmt){

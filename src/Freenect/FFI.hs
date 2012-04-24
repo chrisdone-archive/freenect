@@ -59,9 +59,26 @@ foreign import ccall
 foreign import ccall "wrapper"  
   wrapDepthCallback :: DepthCallback -> IO (FunPtr DepthCallback)
 
+type VideoCallback = Ptr DeviceStruct -> Ptr Word8 -> Word32 -> IO ()
+
+foreign import ccall
+  "freenect.h freenect_set_video_callback"
+  freenect_set_video_callback
+    :: Ptr DeviceStruct
+    -> (FunPtr VideoCallback)
+    -> IO ()
+
+foreign import ccall "wrapper"  
+  wrapVideoCallback :: VideoCallback -> IO (FunPtr VideoCallback)
+
 foreign import ccall
   "freenect.h freenect_start_depth"
   freenect_start_depth :: Ptr DeviceStruct
+                       -> IO CInt
+
+foreign import ccall
+  "freenect.h freenect_start_video"
+  freenect_start_video :: Ptr DeviceStruct
                        -> IO CInt
 
 foreign import ccall
@@ -80,6 +97,19 @@ foreign import ccall
   new_freenect_device :: IO (Ptr (Ptr DeviceStruct))
 
 data FrameMode
+
+foreign import ccall
+  "freenect.h find_video_mode_freenect"
+  find_video_mode_freenect :: Word32
+                           -> Word32
+                           -> IO (Ptr FrameMode)
+foreign import ccall
+  "freenect.h set_freenect_video_mode"
+  set_freenect_video_mode :: Ptr DeviceStruct -> Ptr FrameMode -> IO CInt
+  
+foreign import ccall
+  "freenect.h get_freenect_video_resolution"
+  get_freenect_video_resolution :: Ptr DeviceStruct -> IO CInt
 
 foreign import ccall
   "freenect.h find_depth_mode_freenect"
