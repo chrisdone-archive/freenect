@@ -63,9 +63,16 @@ Write Reg 0x0005 <= 0x00
 
 Next I wanted to try adapting Chris's Glut.hs example to display the RGB video in real-time. One thing I discovered I should do is change the pointer size of the video payload from Word16 to Word8. This would make it easier to access the RGB bytes, since in raw RGB mode they are stored as one Byte after another, Red first, Green second, Blue third. I also realized the values I got from the payload above consist of the RGB bytes concatenated.
 
-I got the GlutRGB.hs file to a point where I was ready to test it, and when I did, I got an image, but it was greyscale and something was wrong with it. It looked like multiple images overlayed on top of another. I played around with it for a while but wasn't getting anywhere, so I thought I'd try to do something simpler: saving a frame to a .BMP file.
+I got the GlutRGB.hs file to a point where I was ready to test it, and when I did, I got an image, but it was greyscale and something was wrong with it. It looked like multiple images overlayed on top of another. I played around with it for a while but wasn't getting anywhere, so I thought I'd try to do something simpler: saving a frame to a .BMP file. I used the JuicyPixels library for this purpose. It has a nice BMP output function.
 
 I edited RGB.hs to a point where it should save a BMP file, and wouldn't you know it, I still got the weird greyscale effect. I decided to try changing the video mode from RGB to Bayer, and success! I got a coherent image from the Kinect. But it was still in greyscale.
 
+At this point I decided to give up for the night and email Chris to see if he had some ideas.
 
+4/23/2012
+---------
+Chris replied to my email and apparently there was just one mistake I was making regarding the indexing of the pixels. I was not multiplying by 3, which is necessary because of the 3 Bytes per pixel. I blame working too late. Anyway, with that idea in mind I was able to also fix the RGB.hs file which now correctly outputs an "output.bmp" file representing one RGB video frame grab. 
 
+Lastly, I edited Chris's README file to reflect some of the beginner pitfalls and startup instructions I experienced while working on this project.
+
+With this complete, all of my goals have been reached, so now I'll start on writing the documentation/report for the project.

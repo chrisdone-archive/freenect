@@ -50,6 +50,17 @@ Executable glut
   C-sources:         ../cbits/freenect-helpers.c
   Include-dirs:      ../cbits, /usr/local/include/libfreenect
 
+Executable glutrgb
+  Hs-source-dirs:    ../src src
+  Main-is:           GlutRGB.hs
+  Other-Modules:     Freenect Freenect.FFI
+  Ghc-options:       -O2 -threaded
+  Build-depends:     base > 4 && < 5, vector, GLUT, OpenGL
+  Includes:          libfreenect.h libfreenect_sync.h
+  Extra-libraries:   freenect, freenect_sync
+  C-sources:         ../cbits/freenect-helpers.c
+  Include-dirs:      ../cbits, /usr/local/include/libfreenect
+
 Executable glut-boundary
   Hs-source-dirs:    ../src src
   Main-is:           GlutBoundary.hs

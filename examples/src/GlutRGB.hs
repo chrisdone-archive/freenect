@@ -62,13 +62,10 @@ display videoGrid = do
   case videoGrid of
     Nothing -> return ()
     Just grid -> do
-      forM_ [(x,y) | x <- [0..width-1], y <- [0..height-1]] $ \(x,y) -> do
-        let r = fromIntegral (grid ! (y*width + x + 0))
-            g = fromIntegral (grid ! (y*width + x + 1))
-            b = fromIntegral (grid ! (y*width + x + 2))
-            --d = fromIntegral (fromIntegral video :: Word16)/255
-        patch (x,height-y)
-              (r,g,b)
+      forM_ (filter (< V.length grid) [0,3 .. V.length grid]) $ \i -> do
+        let at n = fromIntegral (grid ! n)
+        patch (mod (div i 3) width,height - div i (width*3))
+            (at i,at (i+1),at (i+2))
       swapBuffers
 
 type PatchColor = (GLubyte,GLubyte,GLubyte)

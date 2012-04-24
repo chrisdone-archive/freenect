@@ -1,4 +1,6 @@
 -- | Freenect examples.
+-- Grabs a frame from the Kinect video camera and outputs it
+-- in the same directory as "output.bmp".
 
 module Main
   (main)
@@ -29,11 +31,11 @@ main =
     withDevice context index $ \device -> do
       printf "Opened device %d.\n" index
       done <- newIORef False
-      setVideoMode device Medium Bayer
+      setVideoMode device Medium RGB
       setVideoCallback device $ \payload timestamp -> do
-        --printf "Payload: %s\n" (take 100 $ show payload)
-        let img = ImageRGB8 (generateImage (\x y -> PixelRGB8 (payload ! (y*width + x)) (payload ! (y*width + x + 1)) (payload ! (y*width + x + 2))) width height)
-        writeDynamicBitmap "test.bmp" img 
+        let at x y i = payload ! ((y*width + x)*3 + i)
+        let img = ImageRGB8 (generateImage (\x y -> PixelRGB8 (at x y 0) (at x y 1) (at x y 2)) width height)
+        writeDynamicBitmap "output.bmp" img 
         writeIORef done True
       printf "Setted video callback.\n"
       startVideo device

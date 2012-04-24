@@ -378,7 +378,28 @@ setDepthMode d res fmt = flip withD d $ \dptr -> do
 -- Once that's done, you start the depth stream:
 --
 -- @startDepth device@
-
+--
+-- Likewise, you can grab video frames. Once you have a context, set the
+-- video mode you want using
+--
+-- @setVideoMode device Medium RGB@
+--
+-- In this example, we set medium resolution (640x480) with raw RGB24 Bytes.
+--
+-- Next, set the video callback:
+--
+-- @
+-- setVideoCallback device $ \payload timestamp -> do
+--   printf \"Payload: %s\n\" (take 100 $ show payload)
+-- @
+--
+-- Note that unlike depth, which comes in as vector of Word16's, video is a
+-- vector of Word8's.
+--
+-- Lastly, start the video stream:
+--
+-- @startVideo device@
+--
 -- $events
 --
 -- Finally you need a way to receieve data. You call `processEvents'
@@ -389,6 +410,6 @@ setDepthMode d res fmt = flip withD d $ \dptr -> do
 --   processEvents context
 -- @
 --
--- Calls `processEvents' trigger the depth callback. Continue calling
--- it sequentially as much as you want, but not from the depth
--- callback itself.
+-- Calls `processEvents' to trigger the depth and/or video callback. Continue calling
+-- it sequentially as much as you want, but not from within the depth or video
+-- callbacks.
