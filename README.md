@@ -65,7 +65,7 @@ You can also run these examples directly. First navigate to the src directory:
 
 To run the RGB.hs program, which grabs an RGB video frame from the Kinect and saves it as a file called "output.bmp" in the same directory, run:
 
-  runhaskell RGB.hs
+    runhaskell RGB.hs
 
 To run the GlutRGB.hs program, which displays the real-time RGB video stream from the Kinect in a window, run:
 
