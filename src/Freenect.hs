@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns, BangPatterns #-}
 {-# OPTIONS -fno-warn-name-shadowing #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
