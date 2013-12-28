@@ -23,7 +23,7 @@ Library
   Exposed-Modules:   Freenect Freenect.FFI
   Ghc-options:       -O2
   Build-depends:     base > 4 && < 5, vector
-  Includes:          libfreenect.h libfreenect_sync.h
+  Includes:          libfreenect.h 
   Extra-libraries:   freenect, freenect_sync
   C-sources:         cbits/freenect-helpers.c
   Include-dirs:      cbits
