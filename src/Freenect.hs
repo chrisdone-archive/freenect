@@ -89,6 +89,7 @@ data FreenectException
   | StartVideoProblem        -- ^ Problem starting the video stream.
   | StartDepthProblem        -- ^ Problem starting the depth stream.
   | UnableToSetTilt          -- ^ Unable to set the tilt.
+  | UnableToSetLed           -- ^ Unable to set active led
   | SetVideoMode             -- ^ Unable to set the video mode.
   | VideoModeNotSet          -- ^ TODO, not used: You didn't set the video mode.
   | SetDepthMode             -- ^ Unable to set the depth mode.
@@ -319,6 +320,23 @@ setDepthMode d res fmt = flip withD d $ \dptr -> do
                                         (fromIntegral (fromEnum fmt))
   succeed SetDepthMode (return ()) $
     set_freenect_depth_mode dptr frameMode
+
+data Led 
+  = Off
+  | Green
+  | Red
+  | Yellow
+  | BlinkGreen
+  | BlinkRedYellow
+  deriving (Enum,Show,Eq)
+
+setLed :: Device -> Led -> IO ()
+setLed d led = flip withD d $ \ptr -> do
+   ptr <- peek ptr
+   succeed UnableToSetLed (return ()) $ 
+      freenect_set_led ptr (fromIntegral (fromEnum led))
+
+
 
 -- $contexts
 -- 
