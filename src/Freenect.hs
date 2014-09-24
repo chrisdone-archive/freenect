@@ -35,6 +35,7 @@ module Freenect
        ,setDepthCallback
        ,startDepth
        ,setTiltDegrees
+       ,setLed
        ,setVideoMode
        ,setDepthMode
        ,Context
@@ -42,6 +43,7 @@ module Freenect
        ,FreenectException(..)
        ,Subdevice(..)
        ,LogLevel(..)
+       ,Led(..)
        ,Resolution(..)
        ,VideoFormat(..)
        ,DepthFormat(..))
@@ -330,11 +332,15 @@ data Led
   | BlinkRedYellow
   deriving (Enum,Show,Eq)
 
+-- | Sets the current LED state for the specified device
 setLed :: Device -> Led -> IO ()
 setLed d led = flip withD d $ \ptr -> do
    ptr <- peek ptr
-   succeed UnableToSetLed (return ()) $ 
-      freenect_set_led ptr (fromIntegral (fromEnum led))
+   succeed UnableToSetLed (return ()) $
+      -- BlinkGreen is 4 and 5, BlinkRedYellow is 6 (see libfreenect.h)
+      freenect_set_led ptr (if ledcode == 5 then 6 else ledcode)
+   where
+   ledcode = (fromIntegral (fromEnum led))
 
 
 
