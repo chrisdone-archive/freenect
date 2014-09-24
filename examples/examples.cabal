@@ -71,3 +71,16 @@ Executable glut-boundary
   Extra-libraries:   freenect, freenect_sync
   C-sources:         ../cbits/freenect-helpers.c
   Include-dirs:      ../cbits, /usr/local/include/libfreenect
+
+Executable setled
+  Hs-source-dirs:    ../src src
+  Main-is:           SetLed.hs
+  Other-Modules:     Freenect Freenect.FFI
+  Ghc-options:       -O2
+  Build-depends:     base > 4 && < 5, vector, JuicyPixels 
+  Includes:          libfreenect.h libfreenect_sync.h
+  Extra-libraries:   freenect, freenect_sync
+  C-sources:         ../cbits/freenect-helpers.c
+  Include-dirs:      ../cbits, /usr/local/include/libfreenect
+
+

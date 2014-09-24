@@ -85,6 +85,10 @@ foreign import ccall
   "freenect.h freenect_set_tilt_degs"
   freenect_set_tilt_degs :: Ptr DeviceStruct -> CDouble -> IO CInt
 
+
+foreign import ccall
+   "freenect.h freenect_set_led"
+   freenect_set_led :: Ptr DeviceStruct -> CInt -> IO CInt
 --------------------------------------------------------------------------------
 -- Helpers.
 
