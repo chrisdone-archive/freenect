@@ -24,6 +24,7 @@ module Freenect
        ,countDevices
        ,withContext
        ,processEvents
+       ,processEventsTimeout
        ,selectSubdevices
        ,newDevice
        ,openDevice
@@ -149,6 +150,22 @@ processEvents = withC $ \cptr -> do
     -10 -> return ()
     _ | result < 0 -> throw (ProcessEvents result)
       | otherwise  -> return ()
+
+
+processEventsTimeout :: Context -> Int -> IO ()
+processEventsTimeout ctx timeout = flip withC ctx $ \cptr -> do
+  cptr   <- peek cptr
+  result <- process_events_timeout cptr (fromIntegral timeout)
+  case result of
+    -- LIBUSB_ERROR_INTERRUPTED 	
+    -- System call interrupted (perhaps due to signal).
+    -- I think the GHC runtime sends interrupts sometimes, or
+    -- otherwise signals are coming from somewhere but are they appear
+    -- to be ignorable.
+    -10 -> return ()
+    _ | result < 0 -> throw (ProcessEvents result)
+      | otherwise  -> return ()
+
 
 -- | Run a computation for which the CInt result is zero (in C this is
 --   success), and thrown an exception if the result is non-zero.

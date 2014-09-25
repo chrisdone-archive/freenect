@@ -106,6 +106,10 @@ foreign import ccall
   "freenect-helpers.h new_freenect_device"
   new_freenect_device :: IO (Ptr (Ptr DeviceStruct))
 
+foreign import ccall
+  "freenect-helpers.h process_events_timeout"
+  process_events_timeout :: Ptr ContextStruct -> CInt -> IO CInt
+
 data FrameMode
 
 foreign import ccall
