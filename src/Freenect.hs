@@ -38,12 +38,14 @@ module Freenect
        ,setLed
        ,setVideoMode
        ,setDepthMode
+       ,setFlag
        ,Context
        ,Device
        ,FreenectException(..)
        ,Subdevice(..)
        ,LogLevel(..)
        ,Led(..)
+       ,Flag(..)
        ,Resolution(..)
        ,VideoFormat(..)
        ,DepthFormat(..))
@@ -92,6 +94,7 @@ data FreenectException
   | StartDepthProblem        -- ^ Problem starting the depth stream.
   | UnableToSetTilt          -- ^ Unable to set the tilt.
   | UnableToSetLed           -- ^ Unable to set active led
+  | UnableToSetFlag          -- ^ Failed to enable a specific device flag
   | SetVideoMode             -- ^ Unable to set the video mode.
   | VideoModeNotSet          -- ^ TODO, not used: You didn't set the video mode.
   | SetDepthMode             -- ^ Unable to set the depth mode.
@@ -344,6 +347,32 @@ setLed d led = flip withD d $ \ptr -> do
 
 
 
+data Flag
+  = AutoExposure
+  | AutoWhiteBalance
+  | RawColor
+  | MirrorDepth
+  | MirrorVideo
+  deriving(Show,Eq)
+
+-- | Sets a specific device flag for depth and video cameras. The 
+--    bool value defines to enable or disable the given flag. The specific camera
+--    has to be started with startVideo/startDepth before Freenect accepts 
+--    these flags (seems to be a small bug for me, an issue is written at libfreenect) 
+setFlag :: Device -> Flag -> Bool -> IO ()
+setFlag d flag enabled = flip withD d $ \ptr -> do
+   ptr <- peek ptr
+   succeed UnableToSetFlag (return ()) $ 
+      freenect_set_flag ptr key value
+   where
+   key   = toEnumInteger flag
+   value = fromIntegral (if enabled then 1 else 0)
+
+   toEnumInteger AutoExposure     = 1 `shift` 14
+   toEnumInteger AutoWhiteBalance = 1 `shift` 1
+   toEnumInteger RawColor         = 1 `shift` 4
+   toEnumInteger MirrorDepth      = 1 `shift` 16
+   toEnumInteger MirrorVideo      = 1 `shift` 17
 -- $contexts
 -- 
 -- First you need to initalize a context. Example:

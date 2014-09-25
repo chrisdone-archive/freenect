@@ -89,6 +89,12 @@ foreign import ccall
 foreign import ccall
    "freenect.h freenect_set_led"
    freenect_set_led :: Ptr DeviceStruct -> CInt -> IO CInt
+
+
+foreign import ccall 
+   "freenect.h freenect_set_flag"
+   freenect_set_flag :: Ptr DeviceStruct -> CInt -> CInt -> IO CInt
+
 --------------------------------------------------------------------------------
 -- Helpers.
 
