@@ -36,6 +36,7 @@ module Freenect
        ,setDepthCallback
        ,startDepth
        ,setTiltDegrees
+       ,getTiltDegrees
        ,setLed
        ,setVideoMode
        ,setDepthMode
@@ -305,6 +306,17 @@ setTiltDegrees angle = withD $ \ptr -> succeed UnableToSetTilt (return ()) $ do
   ptr <- peek ptr
   freenect_set_tilt_degs ptr (realToFrac angle)
 
+
+-- | Get the tilt degrees for a device
+getTiltDegrees :: Device -> IO Double
+getTiltDegrees d = flip withD d $ \ptr -> do
+   ptr <- peek ptr
+   _ <- freenect_update_tilt_state ptr
+   tiltstate <- freenect_get_tilt_state ptr
+   fmap realToFrac (freenect_get_tilt_degs tiltstate)
+
+
+
 data Resolution = Low | Medium | High
   deriving (Enum,Show,Eq,Ord)
 
@@ -390,6 +402,8 @@ setFlag d flag enabled = flip withD d $ \ptr -> do
    toEnumInteger RawColor         = 1 `shift` 4
    toEnumInteger MirrorDepth      = 1 `shift` 16
    toEnumInteger MirrorVideo      = 1 `shift` 17
+  
+
 -- $contexts
 -- 
 -- First you need to initalize a context. Example:
