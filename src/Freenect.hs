@@ -24,6 +24,7 @@ module Freenect
        ,countDevices
        ,withContext
        ,processEvents
+       ,processEventsTimeout
        ,selectSubdevices
        ,newDevice
        ,openDevice
@@ -35,6 +36,7 @@ module Freenect
        ,setDepthCallback
        ,startDepth
        ,setTiltDegrees
+       ,getTiltDegrees
        ,setLed
        ,setVideoMode
        ,setDepthMode
@@ -149,6 +151,22 @@ processEvents = withC $ \cptr -> do
     -10 -> return ()
     _ | result < 0 -> throw (ProcessEvents result)
       | otherwise  -> return ()
+
+
+processEventsTimeout :: Context -> Int -> IO ()
+processEventsTimeout ctx timeout = flip withC ctx $ \cptr -> do
+  cptr   <- peek cptr
+  result <- process_events_timeout cptr (fromIntegral timeout)
+  case result of
+    -- LIBUSB_ERROR_INTERRUPTED 	
+    -- System call interrupted (perhaps due to signal).
+    -- I think the GHC runtime sends interrupts sometimes, or
+    -- otherwise signals are coming from somewhere but are they appear
+    -- to be ignorable.
+    -10 -> return ()
+    _ | result < 0 -> throw (ProcessEvents result)
+      | otherwise  -> return ()
+
 
 -- | Run a computation for which the CInt result is zero (in C this is
 --   success), and thrown an exception if the result is non-zero.
@@ -288,6 +306,17 @@ setTiltDegrees angle = withD $ \ptr -> succeed UnableToSetTilt (return ()) $ do
   ptr <- peek ptr
   freenect_set_tilt_degs ptr (realToFrac angle)
 
+
+-- | Get the tilt degrees for a device
+getTiltDegrees :: Device -> IO Double
+getTiltDegrees d = flip withD d $ \ptr -> do
+   ptr <- peek ptr
+   _ <- freenect_update_tilt_state ptr
+   tiltstate <- freenect_get_tilt_state ptr
+   fmap realToFrac (freenect_get_tilt_degs tiltstate)
+
+
+
 data Resolution = Low | Medium | High
   deriving (Enum,Show,Eq,Ord)
 
@@ -373,6 +402,8 @@ setFlag d flag enabled = flip withD d $ \ptr -> do
    toEnumInteger RawColor         = 1 `shift` 4
    toEnumInteger MirrorDepth      = 1 `shift` 16
    toEnumInteger MirrorVideo      = 1 `shift` 17
+  
+
 -- $contexts
 -- 
 -- First you need to initalize a context. Example:

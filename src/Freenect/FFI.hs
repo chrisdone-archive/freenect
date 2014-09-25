@@ -10,6 +10,7 @@ import Foreign
 
 data ContextStruct
 data DeviceStruct
+data RawTiltState
 
 --------------------------------------------------------------------------------
 -- Freenect lib functions.
@@ -82,11 +83,6 @@ foreign import ccall
                        -> IO CInt
 
 foreign import ccall
-  "freenect.h freenect_set_tilt_degs"
-  freenect_set_tilt_degs :: Ptr DeviceStruct -> CDouble -> IO CInt
-
-
-foreign import ccall
    "freenect.h freenect_set_led"
    freenect_set_led :: Ptr DeviceStruct -> CInt -> IO CInt
 
@@ -94,6 +90,23 @@ foreign import ccall
 foreign import ccall 
    "freenect.h freenect_set_flag"
    freenect_set_flag :: Ptr DeviceStruct -> CInt -> CInt -> IO CInt
+
+
+foreign import ccall
+  "freenect.h freenect_set_tilt_degs"
+  freenect_set_tilt_degs :: Ptr DeviceStruct -> CDouble -> IO CInt
+
+foreign import ccall 
+   "freenect.h freenect_update_tilt_state"
+   freenect_update_tilt_state :: Ptr DeviceStruct -> IO CInt
+
+foreign import ccall
+   "freenect.h freenect_get_tilt_state"
+   freenect_get_tilt_state :: Ptr DeviceStruct -> IO (Ptr RawTiltState)
+
+foreign import ccall
+   "freenect.h freenect_get_tilt_degs"
+   freenect_get_tilt_degs :: Ptr RawTiltState -> IO CDouble
 
 --------------------------------------------------------------------------------
 -- Helpers.
@@ -105,6 +118,10 @@ foreign import ccall
 foreign import ccall
   "freenect-helpers.h new_freenect_device"
   new_freenect_device :: IO (Ptr (Ptr DeviceStruct))
+
+foreign import ccall
+  "freenect-helpers.h process_events_timeout"
+  process_events_timeout :: Ptr ContextStruct -> CInt -> IO CInt
 
 data FrameMode
 

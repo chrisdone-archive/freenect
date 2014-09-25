@@ -70,3 +70,16 @@ uint32_t get_freenect_depth_resolution(freenect_device* dev){
   freenect_frame_mode mode = freenect_get_current_depth_mode(dev);
   return mode.resolution;
 }
+
+
+int process_events_timeout(freenect_context* ctx, int microseconds)
+{
+    struct timeval timeout;
+    
+    timeout.tv_sec = microseconds / 1000000;
+    timeout.tv_usec = microseconds - timeout.tv_sec * 1000000;
+
+    return freenect_process_events_timeout(ctx, &timeout);
+
+}
+
