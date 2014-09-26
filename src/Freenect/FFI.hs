@@ -108,6 +108,10 @@ foreign import ccall
    "freenect.h freenect_get_tilt_degs"
    freenect_get_tilt_degs :: Ptr RawTiltState -> IO CDouble
 
+foreign import ccall
+   "freenect.h freenect_get_mks_accel"
+   freenect_get_mks_accel :: Ptr RawTiltState -> Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> IO ()
+
 --------------------------------------------------------------------------------
 -- Helpers.
 

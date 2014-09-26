@@ -37,6 +37,7 @@ module Freenect
        ,startDepth
        ,setTiltDegrees
        ,getTiltDegrees
+       ,getAcceleration
        ,setLed
        ,setVideoMode
        ,setDepthMode
@@ -309,11 +310,34 @@ setTiltDegrees angle = withD $ \ptr -> succeed UnableToSetTilt (return ()) $ do
 
 -- | Get the tilt degrees for a device
 getTiltDegrees :: Device -> IO Double
-getTiltDegrees d = flip withD d $ \ptr -> do
+getTiltDegrees= withD $ \ptr -> do
    ptr <- peek ptr
    _ <- freenect_update_tilt_state ptr
    tiltstate <- freenect_get_tilt_state ptr
    fmap realToFrac (freenect_get_tilt_degs tiltstate)
+
+
+-- | Get the accelaretion for (x, y, z) axes from the internal tilt state 
+getAcceleration :: Device -> IO (Double, Double, Double)
+getAcceleration = withD $ \ptr -> do
+   ptr <- peek ptr
+   _ <- freenect_update_tilt_state ptr
+   tiltstate <- freenect_get_tilt_state ptr
+
+   allocaArray 3 $ \temp -> do
+      let step  = sizeOf (undefined :: CDouble)
+
+      let temp_x = temp                     :: Ptr CDouble
+      let temp_y = plusPtr temp step        :: Ptr CDouble
+      let temp_z = plusPtr temp (2 * step)  :: Ptr CDouble
+
+      freenect_get_mks_accel tiltstate temp_x temp_y temp_z
+
+      x <- peek temp_x
+      y <- peek temp_y 
+      z <- peek temp_z 
+
+      return (realToFrac x, realToFrac y, realToFrac z)
 
 
 
