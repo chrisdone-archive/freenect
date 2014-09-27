@@ -33,8 +33,10 @@ module Freenect
        ,setLogLevel
        ,setVideoCallback
        ,startVideo
+       ,stopVideo
        ,setDepthCallback
        ,startDepth
+       ,stopDepth
        ,setTiltDegrees
        ,getTiltDegrees
        ,getAcceleration
@@ -94,7 +96,9 @@ data FreenectException
   | ProcessEvents CInt       -- ^ Call to process events failed.
   | OpenDeviceFailed Integer -- ^ Opening a device failed.
   | StartVideoProblem        -- ^ Problem starting the video stream.
+  | StopVideoProblem         -- ^ Problem stopping the video stream
   | StartDepthProblem        -- ^ Problem starting the depth stream.
+  | StopDepthProblem         -- ^ Problem stopping the depth stream
   | UnableToSetTilt          -- ^ Unable to set the tilt.
   | UnableToSetLed           -- ^ Unable to set active led
   | UnableToSetFlag          -- ^ Failed to enable a specific device flag
@@ -295,11 +299,24 @@ startVideo = withD $ \ptr -> succeed StartVideoProblem (return ()) $ do
   ptr <- peek ptr
   freenect_start_video ptr
 
+-- | Start the video information stream for a device.
+stopVideo :: Device -> IO ()
+stopVideo = withD $ \ptr -> succeed StopVideoProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_stop_video ptr
+
 -- | Start the depth information stream for a device.
 startDepth :: Device -> IO ()
 startDepth = withD $ \ptr -> succeed StartDepthProblem (return ()) $ do
   ptr <- peek ptr
   freenect_start_depth ptr
+
+-- | Stop the depth information stream for a device.
+stopDepth :: Device -> IO ()
+stopDepth = withD $ \ptr -> succeed StopDepthProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_stop_depth ptr
+
 
 -- | Set the tilt degrees for a device.
 setTiltDegrees :: Double -> Device -> IO ()

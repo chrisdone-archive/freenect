@@ -78,8 +78,18 @@ foreign import ccall
                        -> IO CInt
 
 foreign import ccall
+  "freenect.h freenect_stop_depth"
+  freenect_stop_depth :: Ptr DeviceStruct
+                       -> IO CInt
+
+foreign import ccall
   "freenect.h freenect_start_video"
   freenect_start_video :: Ptr DeviceStruct
+                       -> IO CInt
+
+foreign import ccall
+  "freenect.h freenect_stop_video"
+  freenect_stop_video :: Ptr DeviceStruct
                        -> IO CInt
 
 foreign import ccall
