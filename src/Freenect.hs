@@ -53,7 +53,10 @@ module Freenect
        ,Flag(..)
        ,Resolution(..)
        ,VideoFormat(..)
-       ,DepthFormat(..))
+       ,DepthFormat(..)
+       ,setAudioInCallback
+       ,startAudio
+       ,stopAudio)
        where
 
 import Freenect.FFI
@@ -106,6 +109,8 @@ data FreenectException
   | VideoModeNotSet          -- ^ TODO, not used: You didn't set the video mode.
   | SetDepthMode             -- ^ Unable to set the depth mode.
   | DepthModeNotSet          -- ^ TODO, not used: You didn't set the depth mode.
+  | StartAudioProblem        -- ^ Problem starting the audio stream
+  | StopAudioProblem         -- ^ Problem stopping the audio stream
     deriving (Show,Typeable)
 instance Exception FreenectException
 
@@ -444,6 +449,46 @@ setFlag d flag enabled = flip withD d $ \ptr -> do
    toEnumInteger MirrorDepth      = 1 `shift` 16
    toEnumInteger MirrorVideo      = 1 `shift` 17
   
+
+-- | Start the audio information stream for a device.
+startAudio :: Device -> IO ()
+startAudio = withD $ \ptr -> succeed StartAudioProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_start_audio ptr
+
+-- | Stop the audio information stream for a device.
+stopAudio :: Device -> IO ()
+stopAudio = withD $ \ptr -> succeed StopAudioProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_stop_audio ptr
+
+
+-- | Set callback for incoming audio events.
+setAudioInCallback 
+   :: Device 
+   -> (Int -> Vector Word32 -> Vector Word32 -> Vector Word32 -> Vector Word32 -> Vector Word16 -> IO ()) 
+   -> IO ()
+setAudioInCallback d callback = flip withD d $ \dptr -> do
+  dptr <- peek dptr
+  callbackPtr <- wrapAudioInCallback $ \_ num lptr lmptr rmptr rptr nptr _  -> do
+    let !size = (fromIntegral num)
+
+    l_ptr <- newForeignPtr_ lptr
+    lm_ptr <- newForeignPtr_ lmptr
+    rm_ptr <- newForeignPtr_ rmptr
+    r_ptr <- newForeignPtr_ rptr
+    n_ptr <- newForeignPtr_ nptr
+    
+    let !l_vector  = unsafeFromForeignPtr l_ptr 0 size
+    let !lm_vector = unsafeFromForeignPtr lm_ptr 0 size
+    let !rm_vector = unsafeFromForeignPtr rm_ptr 0 size
+    let !r_vector  = unsafeFromForeignPtr r_ptr 0 size
+    let !n_vector  = unsafeFromForeignPtr n_ptr 0 size
+    
+    callback size l_vector lm_vector rm_vector r_vector n_vector
+  freenect_set_audio_in_callback dptr callbackPtr
+
+
 
 -- $contexts
 -- 
