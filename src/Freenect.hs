@@ -184,7 +184,7 @@ succeed e ok m = do
 
 -- | A sub-device (motor, camera and audio), if supported on the
 --   platform.
-data Subdevice = Motor | Camera | Auto
+data Subdevice = Motor | Camera | Audio
   deriving (Show,Eq)
 
 -- | Set which subdevices any subsequent calls to openDevice should
@@ -199,7 +199,7 @@ selectSubdevices c (nub -> subdevices) = flip withC c $ \ptr -> do
 
   where toDeviceId Motor = 1
         toDeviceId Camera = 2
-        toDeviceId Auto = 4
+        toDeviceId Audio = 4
 
 -- | Create a new device.
 newDevice :: IO Device
