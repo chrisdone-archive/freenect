@@ -78,8 +78,18 @@ foreign import ccall
                        -> IO CInt
 
 foreign import ccall
+  "freenect.h freenect_stop_depth"
+  freenect_stop_depth :: Ptr DeviceStruct
+                       -> IO CInt
+
+foreign import ccall
   "freenect.h freenect_start_video"
   freenect_start_video :: Ptr DeviceStruct
+                       -> IO CInt
+
+foreign import ccall
+  "freenect.h freenect_stop_video"
+  freenect_stop_video :: Ptr DeviceStruct
                        -> IO CInt
 
 foreign import ccall
@@ -107,6 +117,35 @@ foreign import ccall
 foreign import ccall
    "freenect.h freenect_get_tilt_degs"
    freenect_get_tilt_degs :: Ptr RawTiltState -> IO CDouble
+
+foreign import ccall
+   "freenect.h freenect_get_mks_accel"
+   freenect_get_mks_accel :: Ptr RawTiltState -> Ptr CDouble -> Ptr CDouble -> Ptr CDouble -> IO ()
+
+--------------------------------------------------------------------------------
+-- Audio
+
+foreign import ccall
+   "freenect_audio.h freenect_start_audio"
+   freenect_start_audio :: Ptr DeviceStruct -> IO CInt
+
+foreign import ccall 
+   "freenect_audio.h freenect_stop_audio"
+   freenect_stop_audio :: Ptr DeviceStruct -> IO CInt
+
+type AudioInCallback = Ptr DeviceStruct -> CInt -> Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> Ptr Word32 -> Ptr Word16 -> Ptr CUChar -> IO ()
+
+foreign import ccall
+  "freenect.h freenect_set_audio_in_callback"
+  freenect_set_audio_in_callback
+    :: Ptr DeviceStruct
+    -> (FunPtr AudioInCallback)
+    -> IO ()
+
+foreign import ccall "wrapper"  
+  wrapAudioInCallback :: AudioInCallback -> IO (FunPtr AudioInCallback)
+
+
 
 --------------------------------------------------------------------------------
 -- Helpers.

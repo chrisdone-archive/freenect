@@ -33,10 +33,13 @@ module Freenect
        ,setLogLevel
        ,setVideoCallback
        ,startVideo
+       ,stopVideo
        ,setDepthCallback
        ,startDepth
+       ,stopDepth
        ,setTiltDegrees
        ,getTiltDegrees
+       ,getAcceleration
        ,setLed
        ,setVideoMode
        ,setDepthMode
@@ -50,7 +53,10 @@ module Freenect
        ,Flag(..)
        ,Resolution(..)
        ,VideoFormat(..)
-       ,DepthFormat(..))
+       ,DepthFormat(..)
+       ,setAudioInCallback
+       ,startAudio
+       ,stopAudio)
        where
 
 import Freenect.FFI
@@ -93,7 +99,9 @@ data FreenectException
   | ProcessEvents CInt       -- ^ Call to process events failed.
   | OpenDeviceFailed Integer -- ^ Opening a device failed.
   | StartVideoProblem        -- ^ Problem starting the video stream.
+  | StopVideoProblem         -- ^ Problem stopping the video stream
   | StartDepthProblem        -- ^ Problem starting the depth stream.
+  | StopDepthProblem         -- ^ Problem stopping the depth stream
   | UnableToSetTilt          -- ^ Unable to set the tilt.
   | UnableToSetLed           -- ^ Unable to set active led
   | UnableToSetFlag          -- ^ Failed to enable a specific device flag
@@ -101,6 +109,8 @@ data FreenectException
   | VideoModeNotSet          -- ^ TODO, not used: You didn't set the video mode.
   | SetDepthMode             -- ^ Unable to set the depth mode.
   | DepthModeNotSet          -- ^ TODO, not used: You didn't set the depth mode.
+  | StartAudioProblem        -- ^ Problem starting the audio stream
+  | StopAudioProblem         -- ^ Problem stopping the audio stream
     deriving (Show,Typeable)
 instance Exception FreenectException
 
@@ -179,7 +189,7 @@ succeed e ok m = do
 
 -- | A sub-device (motor, camera and audio), if supported on the
 --   platform.
-data Subdevice = Motor | Camera | Auto
+data Subdevice = Motor | Camera | Audio
   deriving (Show,Eq)
 
 -- | Set which subdevices any subsequent calls to openDevice should
@@ -194,7 +204,7 @@ selectSubdevices c (nub -> subdevices) = flip withC c $ \ptr -> do
 
   where toDeviceId Motor = 1
         toDeviceId Camera = 2
-        toDeviceId Auto = 4
+        toDeviceId Audio = 4
 
 -- | Create a new device.
 newDevice :: IO Device
@@ -294,11 +304,24 @@ startVideo = withD $ \ptr -> succeed StartVideoProblem (return ()) $ do
   ptr <- peek ptr
   freenect_start_video ptr
 
+-- | Start the video information stream for a device.
+stopVideo :: Device -> IO ()
+stopVideo = withD $ \ptr -> succeed StopVideoProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_stop_video ptr
+
 -- | Start the depth information stream for a device.
 startDepth :: Device -> IO ()
 startDepth = withD $ \ptr -> succeed StartDepthProblem (return ()) $ do
   ptr <- peek ptr
   freenect_start_depth ptr
+
+-- | Stop the depth information stream for a device.
+stopDepth :: Device -> IO ()
+stopDepth = withD $ \ptr -> succeed StopDepthProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_stop_depth ptr
+
 
 -- | Set the tilt degrees for a device.
 setTiltDegrees :: Double -> Device -> IO ()
@@ -309,11 +332,34 @@ setTiltDegrees angle = withD $ \ptr -> succeed UnableToSetTilt (return ()) $ do
 
 -- | Get the tilt degrees for a device
 getTiltDegrees :: Device -> IO Double
-getTiltDegrees d = flip withD d $ \ptr -> do
+getTiltDegrees= withD $ \ptr -> do
    ptr <- peek ptr
    _ <- freenect_update_tilt_state ptr
    tiltstate <- freenect_get_tilt_state ptr
    fmap realToFrac (freenect_get_tilt_degs tiltstate)
+
+
+-- | Get the accelaretion for (x, y, z) axes from the internal tilt state 
+getAcceleration :: Device -> IO (Double, Double, Double)
+getAcceleration = withD $ \ptr -> do
+   ptr <- peek ptr
+   _ <- freenect_update_tilt_state ptr
+   tiltstate <- freenect_get_tilt_state ptr
+
+   allocaArray 3 $ \temp -> do
+      let step  = sizeOf (undefined :: CDouble)
+
+      let temp_x = temp                     :: Ptr CDouble
+      let temp_y = plusPtr temp step        :: Ptr CDouble
+      let temp_z = plusPtr temp (2 * step)  :: Ptr CDouble
+
+      freenect_get_mks_accel tiltstate temp_x temp_y temp_z
+
+      x <- peek temp_x
+      y <- peek temp_y 
+      z <- peek temp_z 
+
+      return (realToFrac x, realToFrac y, realToFrac z)
 
 
 
@@ -403,6 +449,46 @@ setFlag d flag enabled = flip withD d $ \ptr -> do
    toEnumInteger MirrorDepth      = 1 `shift` 16
    toEnumInteger MirrorVideo      = 1 `shift` 17
   
+
+-- | Start the audio information stream for a device.
+startAudio :: Device -> IO ()
+startAudio = withD $ \ptr -> succeed StartAudioProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_start_audio ptr
+
+-- | Stop the audio information stream for a device.
+stopAudio :: Device -> IO ()
+stopAudio = withD $ \ptr -> succeed StopAudioProblem (return ()) $ do
+  ptr <- peek ptr
+  freenect_stop_audio ptr
+
+
+-- | Set callback for incoming audio events.
+setAudioInCallback 
+   :: Device 
+   -> (Int -> Vector Word32 -> Vector Word32 -> Vector Word32 -> Vector Word32 -> Vector Word16 -> IO ()) 
+   -> IO ()
+setAudioInCallback d callback = flip withD d $ \dptr -> do
+  dptr <- peek dptr
+  callbackPtr <- wrapAudioInCallback $ \_ num lptr lmptr rmptr rptr nptr _  -> do
+    let !size = (fromIntegral num)
+
+    l_ptr <- newForeignPtr_ lptr
+    lm_ptr <- newForeignPtr_ lmptr
+    rm_ptr <- newForeignPtr_ rmptr
+    r_ptr <- newForeignPtr_ rptr
+    n_ptr <- newForeignPtr_ nptr
+    
+    let !l_vector  = unsafeFromForeignPtr l_ptr 0 size
+    let !lm_vector = unsafeFromForeignPtr lm_ptr 0 size
+    let !rm_vector = unsafeFromForeignPtr rm_ptr 0 size
+    let !r_vector  = unsafeFromForeignPtr r_ptr 0 size
+    let !n_vector  = unsafeFromForeignPtr n_ptr 0 size
+    
+    callback size l_vector lm_vector rm_vector r_vector n_vector
+  freenect_set_audio_in_callback dptr callbackPtr
+
+
 
 -- $contexts
 -- 
