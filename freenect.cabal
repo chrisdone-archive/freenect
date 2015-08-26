@@ -27,3 +27,4 @@ Library
   Extra-libraries:   freenect, freenect_sync
   C-sources:         cbits/freenect-helpers.c
   Include-dirs:      cbits
+  Pkgconfig-Depends: libfreenect
